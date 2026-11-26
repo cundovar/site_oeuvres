@@ -1,0 +1,28 @@
+services:
+  front:
+    build: ./front
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --hostname 0.0.0.0"
+    ports:
+      - "${FRONT_PORT:-3000}:3000"
+    volumes:
+      - ./front:/app
+      - front_node_modules:/app/node_modules
+      - front_next:/app/.next
+
+  back:
+    build: ./back
+    working_dir: /app
+    command: sh -c "composer install --no-interaction && php -S 0.0.0.0:8000 -t public public/index.php"
+    ports:
+      - "${BACK_PORT:-18080}:8000"
+    volumes:
+      - ./back:/app
+      - back_vendor:/app/vendor
+      - back_var:/app/var
+
+volumes:
+  front_node_modules:
+  front_next:
+  back_vendor:
+  back_var:

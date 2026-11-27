@@ -14,6 +14,11 @@ services:
     build: ./back
     working_dir: /app
     command: sh -c "composer install --no-interaction && php -S 0.0.0.0:8000 -t public public/index.php"
+    environment:
+      DATABASE_URL: "mysql://oeuvres:oeuvres_local@database:3306/oeuvres?serverVersion=8.4.0&charset=utf8mb4"
+    depends_on:
+      database:
+        condition: service_healthy
     ports:
       - "${BACK_PORT:-18080}:8000"
     volumes:
@@ -21,7 +26,26 @@ services:
       - back_vendor:/app/vendor
       - back_var:/app/var
 
+  database:
+    image: mysql:8.4
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-13306}:3306"
+    environment:
+      MYSQL_DATABASE: oeuvres
+      MYSQL_USER: oeuvres
+      MYSQL_PASSWORD: oeuvres_local
+      MYSQL_ROOT_PASSWORD: root_local
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
 volumes:
+  mysql_data:
   front_node_modules:
   front_next:
   back_vendor:

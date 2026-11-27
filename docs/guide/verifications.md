@@ -27,7 +27,13 @@ php bin/console lint:yaml config
 php bin/console lint:container
 ```
 
-Ces commandes vérifient le manifeste, la plateforme PHP, la syntaxe et la configuration. Elles ne remplacent pas les tests de comportement.
+Ces commandes vérifient le manifeste, la plateforme PHP, la syntaxe et la configuration. Pour vérifier le comportement du modèle de données, lancer les tests PHPUnit dans le conteneur :
+
+```bash
+docker compose exec back php vendor/bin/phpunit
+```
+
+Ces tests utilisent une base `oeuvres_test` isolée, créée par le script `docker/mysql/initdb/01-oeuvres-test.sql` lors du premier démarrage de MySQL et par le premier lancement des tests. Ils ne touchent pas aux données de développement. La CI ne lance pas encore ces tests, car elle n'exécute pas de conteneurs MySQL.
 
 ## Docker
 
@@ -53,4 +59,4 @@ La compilation vérifie notamment les liens internes ; relire aussi le contenu p
 
 ## CI et limites
 
-Le workflow `.github/workflows/ci.yml` exécute ces contrôles techniques sur GitHub après installation des dépendances. Aucun outil de tests automatisés n'est encore configuré. Les contrôles visuels, les interactions et l'exactitude de la documentation nécessitent une vérification adaptée au changement.
+Le workflow `.github/workflows/ci.yml` exécute ces contrôles techniques sur GitHub après installation des dépendances, sans les tests PHPUnit ni les vérifications de base de données. Les contrôles visuels, les interactions et l'exactitude de la documentation nécessitent une vérification adaptée au changement.

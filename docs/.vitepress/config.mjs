@@ -9,6 +9,7 @@ export default defineConfig({
     sidebar: [{ text: 'Projet', items: [
       { text: 'Présentation', link: '/guide/projet' },
       { text: 'Développement', link: '/guide/developpement' },
+      { text: 'Modèle métier', link: '/guide/modele-metier' },
       { text: 'Intégration Penpot', link: '/guide/penpot' },
       { text: 'Vérifications', link: '/guide/verifications' },
       { text: 'CI et déploiement', link: '/guide/ci-cd' },

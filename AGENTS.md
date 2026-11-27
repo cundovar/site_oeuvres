@@ -8,6 +8,21 @@
 - Utiliser TypeScript et SCSS pour le front ; ne pas ajouter Tailwind CSS. Privilégier les modules SCSS pour les styles propres aux composants.
 - Tenir compte de l'accessibilité et des écrans de différentes tailles pour les changements d'interface. Ne pas présenter une fonctionnalité prévue comme déjà opérationnelle.
 
+## Contrôleurs et services Symfony
+
+Ces règles s’appliquent aux contrôleurs HTTP et aux services du backend, y compris les futures API.
+
+- Garder les contrôleurs centrés sur HTTP : réception et validation des entrées, vérification des droits, appel du cas d’usage et construction de la réponse.
+- Viser des actions courtes et lisibles, idéalement autour de 30 lignes ; ce repère n’est pas une limite mécanique. Découper dès que plusieurs responsabilités ou branches métier nuisent à la compréhension.
+- Regrouper les routes par responsabilité cohérente ; utiliser un contrôleur par action lorsqu’une opération le justifie, sans multiplier les classes pour de simples délégations.
+- Placer les règles métier et invariants dans les entités ou des services de domaine adaptés ; ne pas les dupliquer entre contrôleurs ni les confier uniquement au front.
+- Utiliser un service applicatif pour un cas d’usage qui coordonne plusieurs étapes, services ou transactions. Un orchestrateur n’est nécessaire que si cette coordination apporte une réelle clarté ; éviter les couches qui ne font que transmettre un appel.
+- Confier les requêtes de lecture ou recherche non triviales aux repositories ; éviter d’éparpiller les requêtes et la persistance dans les contrôleurs.
+- Définir explicitement les données d’entrée et de sortie ; valider les entrées côté serveur et ne pas exposer directement toutes les propriétés d’une entité ou des informations sensibles.
+- Appliquer les contrôles d’authentification et d’autorisation côté Symfony à chaque opération protégée ; distinguer accès public et administration. Prévoir les protections adaptées aux sessions et aux mutations.
+- Retourner des réponses et codes HTTP cohérents, avec des erreurs compréhensibles sans détails internes. Éviter de masquer une erreur inattendue comme un succès.
+- Tester les règles métier au niveau approprié et les contrats HTTP importants : cas nominal, validation, accès refusé et erreurs pertinentes. Vérifier le comportement réel plutôt que le nombre de lignes.
+
 ## Vérification
 
 - Choisir les contrôles adaptés aux fichiers et aux comportements modifiés. Le guide `docs/guide/verifications.md` répertorie les commandes existantes et la CI.

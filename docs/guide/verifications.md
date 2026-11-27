@@ -27,13 +27,15 @@ php bin/console lint:yaml config
 php bin/console lint:container
 ```
 
-Ces commandes vérifient le manifeste, la plateforme PHP, la syntaxe et la configuration. Pour vérifier le comportement du modèle de données, lancer les tests PHPUnit dans le conteneur :
+Ces commandes vérifient le manifeste, la plateforme PHP, la syntaxe et la configuration. Pour vérifier le comportement du modèle de données et de l'authentification, lancer les tests PHPUnit dans le conteneur :
 
 ```bash
 docker compose exec back php vendor/bin/phpunit
 ```
 
-Ces tests utilisent une base `oeuvres_test` isolée, créée par le script `docker/mysql/initdb/01-oeuvres-test.sql` lors du premier démarrage de MySQL et par le premier lancement des tests. Ils ne touchent pas aux données de développement. La CI ne lance pas encore ces tests, car elle n'exécute pas de conteneurs MySQL.
+Ces tests utilisent une base `oeuvres_test` isolée, créée par le script `docker/mysql/initdb/01-oeuvres-test.sql` lors du premier démarrage de MySQL et par le premier lancement des tests. Ils ne touchent pas aux données de développement : persistance et invariants du modèle (classe `PersistanceOeuvresTest`) et parcours de sécurité de l'administration avec e-mails capturés en local (classe `SecuriteAdministrationTest`). La CI ne lance pas encore ces tests, car elle n'exécute pas de conteneurs MySQL.
+
+Pour l'interface d'administration, contrôler également dans un navigateur le parcours lien e-mail (avec Mailpit), mot de passe, refus sans session et déconnexion, au clavier et sur écran étroit.
 
 ## Docker
 

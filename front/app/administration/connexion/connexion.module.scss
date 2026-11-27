@@ -1,0 +1,98 @@
+.main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  text-align: center;
+
+  h1 {
+    font-size: 1.4rem;
+    font-weight: normal;
+    margin: 0;
+  }
+}
+
+.entete {
+  margin-bottom: 2rem;
+}
+
+.atelier {
+  letter-spacing: 0.25em;
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
+}
+
+.formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(24rem, 100%);
+  text-align: left;
+
+  label {
+    font-size: 0.9rem;
+  }
+
+  input {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #999;
+    border-radius: 0.25rem;
+    font: inherit;
+
+    &:focus-visible {
+      outline: 2px solid #171717;
+      outline-offset: 2px;
+    }
+  }
+
+  button {
+    padding: 0.6rem 0.75rem;
+    border: none;
+    border-radius: 0.25rem;
+    background: #171717;
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #171717;
+      outline-offset: 2px;
+    }
+  }
+}
+
+.basculer {
+  background: none !important;
+  color: #171717 !important;
+  text-decoration: underline;
+  font-size: 0.9rem;
+}
+
+.message,
+.erreur {
+  margin-top: 1.25rem;
+  width: min(24rem, 100%);
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.erreur {
+  color: #a02020;
+}
+
+.pied {
+  margin-top: 2.5rem;
+  font-size: 0.85rem;
+  color: #666;
+
+  p {
+    margin: 0.25rem 0;
+  }
+}

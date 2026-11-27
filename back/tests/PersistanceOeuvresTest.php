@@ -9,6 +9,7 @@ use App\Entity\Media;
 use App\Entity\Oeuvre;
 use App\Entity\Serie;
 use App\Enum\StatutPublication;
+use App\Enum\TypeMedia;
 use App\Service\GestionOeuvre;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -61,6 +62,8 @@ final class PersistanceOeuvresTest extends KernelTestCase
         $categorieB = new Categorie('Nocturne');
         $media = new Media('images/soleil.jpg', 'soleil.jpg', 'image/jpeg', 123456);
         $media->setLargeur(1920)->setHauteur(1080)->setAltFr('Peinture au soleil');
+        $video = new Media('videos/atelier.mp4', 'atelier.mp4', 'video/mp4', 2_500_000_000);
+        $video->setType(TypeMedia::Video);
 
         $oeuvre = new Oeuvre('lune-doree', 'Lune dorée');
         $oeuvre->setTitreEn('Golden Moon');
@@ -89,9 +92,11 @@ final class PersistanceOeuvresTest extends KernelTestCase
         self::$em->persist($categorieA);
         self::$em->persist($categorieB);
         self::$em->persist($media);
+        self::$em->persist($video);
         self::$em->persist($oeuvre);
         self::$em->flush();
         $id = $oeuvre->getId();
+        $idVideo = $video->getId();
         self::$em->clear();
 
         $rechargee = self::$em->find(Oeuvre::class, $id);
@@ -104,6 +109,7 @@ final class PersistanceOeuvresTest extends KernelTestCase
         self::assertSame('serie-complete', $rechargee->getSerie()?->getSlug());
         self::assertCount(2, $rechargee->getCategories());
         self::assertSame('soleil.jpg', $rechargee->getMedia()?->getNomOriginal());
+        self::assertSame('2500000000', self::$em->find(Media::class, $idVideo)?->getTaille());
         self::assertSame(StatutPublication::Publie, $rechargee->getStatut());
         self::assertTrue($rechargee->isVisibleIndex());
         self::assertFalse($rechargee->isMiseEnAvant());

@@ -6,6 +6,8 @@ namespace App\Tests;
 
 use App\Entity\Administrateur;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Mailer\Exception\TransportException;
+use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -181,26 +183,24 @@ final class SecuriteAdministrationTest extends WebTestCase
         self::assertResponseStatusCodeSame(202);
         self::assertEmailCount(1);
 
-        $texte = self::getMailerMessage()->getTextBody();
-        self::assertStringContainsString('administration/connexion/lien', $texte);
-        preg_match('#https?://\S+#', $texte, $correspondances);
-        $requete = parse_url($correspondances[0], PHP_URL_QUERY);
+        $parametres = $this->parametresDuLien(self::getMailerMessage()->getTextBody());
+        self::assertNotNull($parametres);
 
-        $client->request('GET', '/api/admin/connexion/lien/valide?' . $requete);
+        $client->request('GET', '/api/admin/connexion/lien/valide');
         self::assertResponseStatusCodeSame(405);
 
-        $client->request('POST', '/api/admin/connexion/lien/valide?' . $requete);
+        $client->request('POST', '/api/admin/connexion/lien/valide', $parametres);
         self::assertResponseStatusCodeSame(200);
 
         $client->request('GET', '/api/admin/session');
         self::assertResponseStatusCodeSame(200);
         self::assertSame('lien@test.local', json_decode($client->getResponse()->getContent(), true)['email']);
 
-        $client->request('POST', '/api/admin/connexion/lien/valide?' . $requete);
+        $client->request('POST', '/api/admin/connexion/lien/valide', $parametres);
         self::assertResponseStatusCodeSame(401);
     }
 
-    public function testLienExpirerOuFalsifieEstRefuse(): void
+    public function testLienFalsifieEstRefuse(): void
     {
         $this->creerCompte('expire@test.local', null);
 
@@ -208,13 +208,59 @@ final class SecuriteAdministrationTest extends WebTestCase
         $client->request('POST', '/api/admin/connexion/lien/demande', [], [], ['CONTENT_TYPE' => 'application/json'], '{"email":"expire@test.local"}');
         self::assertEmailCount(1);
 
-        $texte = trim(self::getMailerMessage()->getTextBody());
-        preg_match('#https?://\S+#', $texte, $correspondances);
-        parse_str((string) parse_url($correspondances[0], PHP_URL_QUERY), $parametres);
+        $parametres = $this->parametresDuLien(self::getMailerMessage()->getTextBody());
+        self::assertNotNull($parametres);
         $parametres['expires'] = (string) ((int) $parametres['expires'] - 1);
-        $client->request('POST', '/api/admin/connexion/lien/valide?' . http_build_query($parametres));
+        $client->request('POST', '/api/admin/connexion/lien/valide', $parametres);
 
         self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testLienAuthentiqueExpireEstRefuse(): void
+    {
+        $this->creerCompte('expiration@test.local', null);
+
+        $client = static::getClient();
+        $client->request('POST', '/api/admin/connexion/lien/demande', [], [], ['CONTENT_TYPE' => 'application/json'], '{"email":"expiration@test.local"}');
+        self::assertEmailCount(1);
+
+        $parametres = $this->parametresDuLien(self::getMailerMessage()->getTextBody());
+        self::assertNotNull($parametres);
+        sleep(3);
+        $client->request('POST', '/api/admin/connexion/lien/valide', $parametres);
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testEchecEnvoiConserveLaReponseNeutre(): void
+    {
+        $this->creerCompte('panne@test.local', null);
+
+        $client = static::getClient();
+        $mailer = $this->createStub(MailerInterface::class);
+        $mailer->method('send')->willThrowException(new TransportException('SMTP indisponible.'));
+        self::getContainer()->set('mailer.mailer', $mailer);
+
+        $client->request('POST', '/api/admin/connexion/lien/demande', [], [], ['CONTENT_TYPE' => 'application/json'], '{"email":"inconnu@nul.test"}');
+        $inconnu = [$client->getResponse()->getStatusCode(), $client->getResponse()->getContent()];
+
+        $client->request('POST', '/api/admin/connexion/lien/demande', [], [], ['CONTENT_TYPE' => 'application/json'], '{"email":"panne@test.local"}');
+        $connu = [$client->getResponse()->getStatusCode(), $client->getResponse()->getContent()];
+
+        self::assertSame($inconnu, $connu);
+        self::assertSame(202, $connu[0]);
+    }
+
+    /** @return array<string, string>|null */
+    private function parametresDuLien(string $texte): ?array
+    {
+        if (!preg_match('#https?://\S+#', $texte, $correspondances)) {
+            return null;
+        }
+
+        parse_str((string) parse_url($correspondances[0], PHP_URL_QUERY), $parametres);
+
+        return $parametres === [] ? null : $parametres;
     }
 
     public function testDemandeIdentiquePourCompteInconnu(): void

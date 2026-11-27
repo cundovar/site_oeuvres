@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\Administrateur;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,6 +25,7 @@ final class ConnexionController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly LoginLinkHandlerInterface $loginLinkHandler,
         private readonly MailerInterface $mailer,
+        private readonly LoggerInterface $logger,
         #[Autowire('%app.front_url%')] private readonly string $frontUrl,
         #[Autowire('%app.mailer_from%')] private readonly string $mailerFrom,
     ) {
@@ -47,8 +49,14 @@ final class ConnexionController extends AbstractController
         $administrateur = $this->entityManager->getRepository(Administrateur::class)->findOneBy(['email' => $email]);
 
         if ($administrateur !== null) {
-            $lien = $this->loginLinkHandler->createLoginLink($administrateur);
-            $this->envoyerEmail($administrateur->getEmail(), $this->urlFront($lien));
+            try {
+                $lien = $this->loginLinkHandler->createLoginLink($administrateur);
+                $this->envoyerEmail($administrateur->getEmail(), $this->urlFront($lien));
+            } catch (\Throwable $exception) {
+                $this->logger->warning('Échec de préparation ou d’envoi du lien de connexion.', [
+                    'exception' => $exception,
+                ]);
+            }
         }
 
         return new JsonResponse(['message' => 'Si cette adresse est autorisée, un lien vous a été envoyé.'], 202);

@@ -19,6 +19,7 @@ services:
     environment:
       DATABASE_URL: "mysql://oeuvres:oeuvres_local@database:3306/oeuvres?serverVersion=8.4.0&charset=utf8mb4"
       MAILER_DSN: "smtp://mail:1025"
+      APP_SECRET: "${BACK_APP_SECRET:?Renseignez BACK_APP_SECRET dans le fichier .env racine (openssl rand -hex 16)}"
     depends_on:
       database:
         condition: service_healthy

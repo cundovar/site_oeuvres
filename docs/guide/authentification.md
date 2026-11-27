@@ -6,7 +6,7 @@ Cette page décrit le contrat d'authentification de l'espace d'administration, l
 
 L'administration est réservée à des comptes créés manuellement ; il n'existe aucune inscription publique. Deux parcours mènent à la même session :
 
-- **Lien par e-mail.** L'administrateur saisit son adresse ; un lien signé, valable 900 secondes et à usage unique, est envoyé si le compte existe. La page intermédiaire demande une confirmation explicite (POST) avant d'ouvrir la session, afin qu'un scanner de messagerie ne consomme pas le lien. La réponse est identique que l'adresse soit connue ou non.
+- **Lien par e-mail.** L'administrateur saisit son adresse ; un lien signé, valable 900 secondes et à usage unique, est envoyé si le compte existe. La page intermédiaire demande une confirmation explicite (POST) avant d'ouvrir la session, afin qu'un scanner de messagerie ne consomme pas le lien. Les paramètres de validation sont transmis dans le corps de la requête et jamais dans une URL ; la page de confirmation remplace aussi l'entrée d'historique qui portait le lien. La réponse est identique que l'adresse soit connue ou non, y compris en cas d'échec d'envoi (échec journalisé côté serveur).
 - **Mot de passe.** Alternative au lien. Les tentatives sont limitées ; les réponses d'échec sont génériques et ne précisent pas si le compte existe.
 
 Chaque authentification réussie renouvelle l'identifiant de session. La protection des opérations est vérifiée par Symfony côté serveur pour chaque requête ; l'interface ne protège rien par elle-même.
@@ -19,7 +19,7 @@ Toutes les routes sont sous `/api/admin`, servies par Symfony. Le front Next.js 
 | --- | --- | --- |
 | `/api/admin/csrf` | GET | Fournit un jeton CSRF lié à la session |
 | `/api/admin/connexion/lien/demande` | POST | Demande d'envoi du lien par e-mail ; réponse identique pour une adresse inconnue ; requêtes limitées |
-| `/api/admin/connexion/lien/valide` | POST | Valide le lien (paramètre `login_link`) et ouvre la session |
+| `/api/admin/connexion/lien/valide` | POST | Valide le lien (paramètres dans le corps de la requête) et ouvre la session |
 | `/api/admin/connexion/mot-de-passe` | POST | Connexion par adresse et mot de passe ; CSRF requis |
 | `/api/admin/session` | GET | État de la session : informations du compte ou 401 |
 | `/api/admin/deconnexion` | POST | Invalide la session ; CSRF requis |
@@ -33,6 +33,7 @@ Toutes les routes sont sous `/api/admin`, servies par Symfony. Le front Next.js 
 
 ## Hypothèses techniques
 
+- **Secrets** : aucun secret n'est versionné. En développement, `BACK_APP_SECRET` est défini dans un fichier `.env` à la racine (utilisé par Compose) et `APP_SECRET` dans `back/.env.local` (pour un usage hors Compose) ; ces fichiers sont ignorés par git. En production, chaque déploiement fournit ses propres valeurs par l'environnement ; le secret versionné du dépôt ne doit jamais y être utilisé.
 - **Topologie** : le front Next.js relaie `/api/admin` vers Symfony (proxy même origine), ce qui évite CORS en développement comme en production. La topologie de production réelle reste à définir ; elle devra préserver cette même origine ou justifier un ajustement des cookies.
 - **HTTPS** : requis en production pour activer `Secure` sur le cookie ; le développement local reste en HTTP.
 - **E-mail** : transport SMTP configurable par `MAILER_DSN`. En local, Mailpit reçoit les messages sans envoi réel ; les tests utilisent le transport de test Symfony.
@@ -62,7 +63,7 @@ Le mot de passe exige au moins 12 caractères. Sans mot de passe, un compte ne p
 
 - E-mails de test : Mailpit reçoit les messages du backend, interface sur `http://localhost:18025` (port `MAILPIT_PORT`).
 - Parcours complet : demander un lien depuis `http://localhost:3000/administration/connexion`, l'ouvrir depuis Mailpit, confirmer, constater la session et la déconnexion.
-- Tests automatisés : `docker compose exec back php vendor/bin/phpunit` couvre connexion par mot de passe, CSRF, limitation des tentatives, lien expiré ou réutilisé, accès sans session et déconnexion (voir [vérifications](/guide/verifications)).
+- Tests automatisés : `docker compose exec back php vendor/bin/phpunit` couvre connexion par mot de passe, CSRF, limitation des tentatives, lien falsifié, lien authentique arrivé à expiration (durée de vie réduite à 2 secondes en environnement de test), échec d'envoi simulé, accès sans session et déconnexion (voir [vérifications](/guide/verifications)).
 
 ## Reste à faire
 

@@ -391,6 +391,43 @@ final class PersistanceOeuvresTest extends KernelTestCase
         self::assertNotContains($oeuvre, $categorie->getOeuvres());
     }
 
+    public function testAjoutSurCollectionsDejaChargeesEstSynchroniseEtPersiste(): void
+    {
+        $categorie = new Categorie('Collection chargée');
+        $serie = new Serie('serie-chargee', 'Série chargée');
+        $oeuvreA = new Oeuvre('oeuvre-chargee-a', 'Œuvre chargée A');
+        $oeuvreA->addCategorie($categorie);
+        $oeuvreA->setSerie($serie);
+        self::$em->persist($categorie);
+        self::$em->persist($serie);
+        self::$em->persist($oeuvreA);
+        self::$em->flush();
+        $idCategorie = $categorie->getId();
+        $idSerie = $serie->getId();
+        self::$em->clear();
+
+        $categorie = self::$em->find(Categorie::class, $idCategorie);
+        $serie = self::$em->find(Serie::class, $idSerie);
+        self::assertCount(1, $categorie->getOeuvres());
+        self::assertCount(1, $serie->getOeuvres());
+
+        $oeuvreB = new Oeuvre('oeuvre-chargee-b', 'Œuvre chargée B');
+        self::$em->persist($oeuvreB);
+        $oeuvreB->addCategorie($categorie);
+        $oeuvreB->setSerie($serie);
+        self::assertCount(2, $categorie->getOeuvres());
+        self::assertCount(2, $serie->getOeuvres());
+        self::$em->flush();
+        self::$em->clear();
+
+        $categorieRecuperee = self::$em->find(Categorie::class, $idCategorie);
+        $serieRecuperee = self::$em->find(Serie::class, $idSerie);
+        self::assertCount(2, $categorieRecuperee->getOeuvres());
+        self::assertCount(2, $serieRecuperee->getOeuvres());
+        self::assertSame('oeuvre-chargee-b', $categorieRecuperee->getOeuvres()->last()->getSlug());
+        self::assertSame('oeuvre-chargee-b', $serieRecuperee->getOeuvres()->last()->getSlug());
+    }
+
     public function testSlugUnique(): void
     {
         $oeuvre = new Oeuvre('slug-deja-emploi', 'Œuvre première');

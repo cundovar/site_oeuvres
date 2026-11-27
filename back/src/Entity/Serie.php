@@ -9,6 +9,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\PersistentCollection;
+use Doctrine\Persistence\Proxy;
 
 #[ORM\Entity]
 #[ORM\HasLifecycleCallbacks]
@@ -192,8 +194,7 @@ class Serie
 
     public function setPieceMaitresse(?Oeuvre $oeuvre): static
     {
-        if ($oeuvre !== null && $oeuvre->getSerie() !== $this
-            && $oeuvre->getSerie()?->getId() !== $this->getId()) {
+        if ($oeuvre !== null && !$this->retientDeja($oeuvre)) {
             throw new \InvalidArgumentException('La pièce maîtresse doit appartenir à la série.');
         }
 
@@ -208,18 +209,70 @@ class Serie
         return $this->oeuvres;
     }
 
+    public function estLaMemeQue(?Serie $autre): bool
+    {
+        if ($this === $autre) {
+            return true;
+        }
+
+        return $autre !== null && $this->getId() !== null && $this->getId() === $autre->getId();
+    }
+
     public function ajouterOeuvre(Oeuvre $oeuvre): void
     {
-        if ($oeuvre->getSerie()?->getId() !== $this->getId()) {
+        if (!$this->retientDeja($oeuvre)) {
             $oeuvre->setSerie($this);
         }
     }
 
     public function retirerOeuvre(Oeuvre $oeuvre): void
     {
-        if ($oeuvre->getSerie()?->getId() === $this->getId()) {
+        if ($this->retientDeja($oeuvre)) {
             $oeuvre->setSerie(null);
         }
+    }
+
+    public function recevoirOeuvre(Oeuvre $oeuvre): void
+    {
+        if (!$this->collectionModifiable() || $this->oeuvres->contains($oeuvre)) {
+            return;
+        }
+
+        $this->oeuvres->add($oeuvre);
+    }
+
+    public function oublierOeuvre(Oeuvre $oeuvre): void
+    {
+        if ($this->collectionModifiable()) {
+            $this->oeuvres->removeElement($oeuvre);
+        }
+
+        if ($this->pieceMaitresse === $oeuvre) {
+            $this->pieceMaitresse = null;
+        }
+    }
+
+    private function collectionModifiable(): bool
+    {
+        return !($this->oeuvres instanceof PersistentCollection && !$this->oeuvres->isInitialized());
+    }
+
+    private function retientDeja(Oeuvre $oeuvre): bool
+    {
+        $serieDeOeuvre = $oeuvre->getSerie();
+        if ($serieDeOeuvre === $this) {
+            return true;
+        }
+
+        if ($serieDeOeuvre === null) {
+            return false;
+        }
+
+        if ($serieDeOeuvre instanceof Proxy && !$serieDeOeuvre->__isInitialized()) {
+            $serieDeOeuvre->__load();
+        }
+
+        return $this->getId() !== null && $this->getId() === $serieDeOeuvre->getId();
     }
 
     public function getProcedeFr(): ?string

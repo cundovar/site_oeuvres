@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Persistence\Proxy;
 
 #[ORM\Entity]
 #[ORM\HasLifecycleCallbacks]
@@ -212,16 +213,27 @@ class Oeuvre
 
     public function setSerie(?Serie $serie): static
     {
-        if ($this->serie === $serie) {
+        $courante = $this->serie;
+        if ($courante === $serie) {
             return $this;
         }
 
-        if ($this->serie !== null && $serie !== null && $this->serie->getId() !== null
-            && $this->serie->getId() === $serie->getId()) {
+        $comparables = $courante !== null && $serie !== null
+            && !($courante instanceof Proxy && !$courante->__isInitialized())
+            && !($serie instanceof Proxy && !$serie->__isInitialized());
+        if ($comparables && $courante->estLaMemeQue($serie)) {
             return $this;
+        }
+
+        if ($courante !== null && !($courante instanceof Proxy && !$courante->__isInitialized())) {
+            $courante->oublierOeuvre($this);
         }
 
         $this->serie = $serie;
+
+        if ($serie !== null && !($serie instanceof Proxy && !$serie->__isInitialized())) {
+            $serie->recevoirOeuvre($this);
+        }
 
         return $this;
     }
@@ -235,8 +247,10 @@ class Oeuvre
     public function addCategorie(Categorie $categorie): static
     {
         if (!$this->categories->contains($categorie)) {
+            if (!($categorie instanceof Proxy && !$categorie->__isInitialized())) {
+                $categorie->recevoirOeuvre($this);
+            }
             $this->categories->add($categorie);
-            $categorie->ajouterOeuvre($this);
         }
 
         return $this;
@@ -244,9 +258,10 @@ class Oeuvre
 
     public function removeCategorie(Categorie $categorie): static
     {
-        if ($this->categories->removeElement($categorie)) {
-            $categorie->retirerOeuvre($this);
+        if (!($categorie instanceof Proxy && !$categorie->__isInitialized())) {
+            $categorie->oublierOeuvre($this);
         }
+        $this->categories->removeElement($categorie);
 
         return $this;
     }

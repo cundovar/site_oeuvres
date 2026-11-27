@@ -1,0 +1,56 @@
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        App\Entity\Administrateur: 'auto'
+
+    providers:
+        administrateurs:
+            entity: { class: App\Entity\Administrateur, property: email }
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler(/|$)|(_wdt|assets|build)/)
+            security: false
+        admin:
+            pattern: ^/api/admin
+            provider: administrateurs
+            lazy: true
+            entry_point: App\Security\EntreeSessionRequise
+            custom_authenticators:
+                - App\Security\AuthentificateurMotDePasse
+            login_link:
+                check_route: api_admin_connexion_lien_valide
+                check_post_only: true
+                signature_properties: [id, email]
+                lifetime: 900
+                max_uses: 1
+                success_handler: App\Security\SuccesLienConnexion
+                failure_handler: App\Security\EchecLienConnexion
+            login_throttling:
+                max_attempts: 5
+                interval: 15 minutes
+            access_denied_handler: App\Security\RefusAcces
+
+    access_control:
+        - { path: ^/api/admin/csrf, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin/connexion, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin/deconnexion, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin, roles: ROLE_ADMIN }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10
+            App\Entity\Administrateur:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10
+        firewalls:
+            admin:
+                login_link:
+                    lifetime: 2

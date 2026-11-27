@@ -30,8 +30,8 @@ class Media
     #[ORM\Column(length: 100)]
     private string $mimeType;
 
-    #[ORM\Column]
-    private int $taille;
+    #[ORM\Column(type: Types::BIGINT)]
+    private string $taille;
 
     #[ORM\Column(nullable: true)]
     private ?int $largeur = null;
@@ -68,7 +68,7 @@ class Media
         $this->cheminStockage = $cheminStockage;
         $this->nomOriginal = $nomOriginal;
         $this->mimeType = $mimeType;
-        $this->taille = $taille;
+        $this->taille = (string) $taille;
     }
 
     public function getId(): ?int
@@ -124,14 +124,14 @@ class Media
         return $this;
     }
 
-    public function getTaille(): int
+    public function getTaille(): string
     {
         return $this->taille;
     }
 
     public function setTaille(int $taille): static
     {
-        $this->taille = $taille;
+        $this->taille = (string) $taille;
 
         return $this;
     }

@@ -10,6 +10,7 @@ export default defineConfig({
       { text: 'Présentation', link: '/guide/projet' },
       { text: 'Développement', link: '/guide/developpement' },
       { text: 'Modèle métier', link: '/guide/modele-metier' },
+      { text: 'Authentification', link: '/guide/authentification' },
       { text: 'Intégration Penpot', link: '/guide/penpot' },
       { text: 'Vérifications', link: '/guide/verifications' },
       { text: 'CI et déploiement', link: '/guide/ci-cd' },

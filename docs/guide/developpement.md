@@ -39,6 +39,26 @@ Le code est partagé avec les conteneurs et les dépendances utilisent des volum
 
 Le front utilise SCSS : les styles globaux sont dans `front/app/globals.scss` et les styles locaux peuvent utiliser des fichiers `.module.scss`.
 
+## Administration et e-mails de test
+
+Avant le premier démarrage, créer les fichiers de secrets locaux (ignorés par git) :
+
+```bash
+openssl rand -hex 16   # valeur à placer dans .env à la racine
+BACK_APP_SECRET=<valeur générée>          # .env à la racine, pour Compose
+APP_SECRET=<valeur générée>               # back/.env.local, pour un usage hors Compose
+```
+
+Mailpit reçoit les e-mails du backend sans envoi réel : interface sur `http://localhost:18025` (modifiable avec `MAILPIT_PORT`). L'administration est protégée par une session Symfony ; le front relaie les appels `/api/admin` vers le backend, origine configurable avec `BACK_ORIGIN` dans Compose ou `next.config.ts`.
+
+Créer un compte administrateur (mot de passe demandé à la volée, 12 caractères minimum) :
+
+```bash
+docker compose exec back php bin/console app:administrateur:creer adresse@example.org
+```
+
+Le parcours complet démarre sur `http://localhost:3000/administration/connexion` : lien par e-mail ou mot de passe.
+
 ## Documentation en local
 
 Avec Node.js 24 et npm, depuis la racine :

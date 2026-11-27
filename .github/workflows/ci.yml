@@ -49,6 +49,8 @@ jobs:
   docker:
     name: Docker
     runs-on: ubuntu-latest
+    env:
+      BACK_APP_SECRET: placeholder-ci
     steps:
       - uses: actions/checkout@v6
       - run: docker compose config --quiet

@@ -15,7 +15,7 @@ Ce modèle est issu des écrans « Admin — Parcours » de Penpot et des décis
 | categories | Plusieurs catégories, via une table de liaison ; suppression d'une catégorie sans suppression des œuvres |
 | media | Référence facultative vers un média image ; texte alternatif requis à la publication à préciser selon le contexte |
 | statut | Brouillon ou publié ; disponibilité des tirages distincte de la publication |
-| visible_index, mise_en_avant | Booléens distincts du statut de publication ; une seule œuvre mise en avant sur le site, unicité contrôlée par l'application |
+| visible_index, mise_en_avant | Booléens distincts du statut de publication ; une seule œuvre mise en avant sur le site : l'unicité est garantie par une contrainte d'unicité en base (colonne à trois états), le service `GestionOeuvre` désignant l'œuvre en avant |
 | ordre_index, ordre_serie | Entiers distincts pour les deux ordres d'affichage |
 | procede, iterations, tirage, format, edition | Données techniques facultatives ; les textes destinés au public prévoient français et anglais |
 | prix_sur_demande | Booléen ; distingue un prix communiqué sur demande d'un montant chiffré |
@@ -50,7 +50,7 @@ Identifiant, type (image ou vidéo), chemin de stockage interne unique, nom orig
 
 ## Périmètre suivant
 
-Films, sous-titres, textes des pages fixes, réglages, comptes et messages seront modélisés séparément. Les pages sont fixes et leurs textes modifiables ; le menu public comprend Œuvres, Séries, Films, À propos et Contact, et Séries figure aussi dans le pied de page. Les exemples de création de pages et de menu sans Séries dans Penpot ne reflètent pas ces décisions.
+Films, sous-titres, textes des pages fixes, réglages et messages seront modélisés séparément. Les comptes administrateurs sont déjà gérés hors de ce modèle, dans le cadre de l'[authentification](/guide/authentification). Les pages sont fixes et leurs textes modifiables ; le menu public comprend Œuvres, Séries, Films, À propos et Contact, et Séries figure aussi dans le pied de page. Les exemples de création de pages et de menu sans Séries dans Penpot ne reflètent pas ces décisions.
 
 Décisions tranchées le 27 novembre 2026 et implémentées dans le schéma : identifiant public sous forme de slug unique par œuvre et par série ; prix modélisé par un booléen « sur demande » et un montant décimal facultatif en euros ; une seule œuvre mise en avant sur le site, avec unicité contrôlée par le service `GestionOeuvre` ; la suppression d'une série détache ses œuvres et efface sa pièce maîtresse ; textes alternatifs portés par le média. Le champ traduisible est une colonne par langue, conformément aux décisions du projet.
 

@@ -9,6 +9,7 @@ use App\Entity\Media;
 use App\Entity\Oeuvre;
 use App\Entity\Serie;
 use App\Enum\StatutPublication;
+use App\Enum\TypeMedia;
 use App\Service\GestionOeuvre;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -61,6 +62,8 @@ final class PersistanceOeuvresTest extends KernelTestCase
         $categorieB = new Categorie('Nocturne');
         $media = new Media('images/soleil.jpg', 'soleil.jpg', 'image/jpeg', 123456);
         $media->setLargeur(1920)->setHauteur(1080)->setAltFr('Peinture au soleil');
+        $video = new Media('videos/atelier.mp4', 'atelier.mp4', 'video/mp4', 2_500_000_000);
+        $video->setType(TypeMedia::Video);
 
         $oeuvre = new Oeuvre('lune-doree', 'Lune dorée');
         $oeuvre->setTitreEn('Golden Moon');
@@ -89,9 +92,11 @@ final class PersistanceOeuvresTest extends KernelTestCase
         self::$em->persist($categorieA);
         self::$em->persist($categorieB);
         self::$em->persist($media);
+        self::$em->persist($video);
         self::$em->persist($oeuvre);
         self::$em->flush();
         $id = $oeuvre->getId();
+        $idVideo = $video->getId();
         self::$em->clear();
 
         $rechargee = self::$em->find(Oeuvre::class, $id);
@@ -104,6 +109,7 @@ final class PersistanceOeuvresTest extends KernelTestCase
         self::assertSame('serie-complete', $rechargee->getSerie()?->getSlug());
         self::assertCount(2, $rechargee->getCategories());
         self::assertSame('soleil.jpg', $rechargee->getMedia()?->getNomOriginal());
+        self::assertSame('2500000000', self::$em->find(Media::class, $idVideo)?->getTaille());
         self::assertSame(StatutPublication::Publie, $rechargee->getStatut());
         self::assertTrue($rechargee->isVisibleIndex());
         self::assertFalse($rechargee->isMiseEnAvant());
@@ -270,6 +276,76 @@ final class PersistanceOeuvresTest extends KernelTestCase
 
         self::assertFalse(self::$em->find(Oeuvre::class, $idA)->isMiseEnAvant());
         self::assertTrue(self::$em->find(Oeuvre::class, $idB)->isMiseEnAvant());
+    }
+
+    public function testDeuxMisesEnAvantDirectesSontRefuseesParLaBase(): void
+    {
+        $oeuvreA = new Oeuvre('oeuvre-en-avant-c', 'Œuvre en avant C');
+        $oeuvreB = new Oeuvre('oeuvre-en-avant-d', 'Œuvre en avant D');
+        self::$em->persist($oeuvreA);
+        self::$em->persist($oeuvreB);
+        self::$em->flush();
+
+        $oeuvreA->setMiseEnAvant(true);
+        $oeuvreB->setMiseEnAvant(true);
+
+        $this->expectException(UniqueConstraintViolationException::class);
+        self::$em->flush();
+    }
+
+    public function testAjoutEtRetraitViaLaSerieSontPersistes(): void
+    {
+        $serieA = new Serie('serie-ajout-a', 'Série ajout A');
+        $serieB = new Serie('serie-ajout-b', 'Série ajout B');
+        $oeuvre = new Oeuvre('oeuvre-ajout', 'Œuvre ajoutée via série');
+        self::$em->persist($serieA);
+        self::$em->persist($serieB);
+        self::$em->persist($oeuvre);
+        self::$em->flush();
+        $idOeuvre = $oeuvre->getId();
+        $idSerieA = $serieA->getId();
+        $idSerieB = $serieB->getId();
+        self::$em->clear();
+
+        $serieA = self::$em->find(Serie::class, $idSerieA);
+        $oeuvre = self::$em->find(Oeuvre::class, $idOeuvre);
+        $serieA->ajouterOeuvre($oeuvre);
+        $serieA->setPieceMaitresse($oeuvre);
+        self::$em->flush();
+        self::$em->clear();
+
+        $oeuvre = self::$em->find(Oeuvre::class, $idOeuvre);
+        self::assertSame($idSerieA, $oeuvre->getSerie()?->getId());
+        self::assertContains($idOeuvre, self::$em->find(Serie::class, $idSerieA)->getOeuvres()->map(fn (Oeuvre $o) => $o->getId())->toArray());
+        self::assertSame($idOeuvre, self::$em->find(Serie::class, $idSerieA)->getPieceMaitresse()?->getId());
+
+        $serieB = self::$em->find(Serie::class, $idSerieB);
+        $serieB->ajouterOeuvre($oeuvre);
+        self::$em->flush();
+        self::$em->clear();
+
+        $oeuvre = self::$em->find(Oeuvre::class, $idOeuvre);
+        self::assertSame($idSerieB, $oeuvre->getSerie()?->getId());
+        $oeuvresSerieA = self::$em->find(Serie::class, $idSerieA)->getOeuvres();
+        self::assertNotContains($idOeuvre, $oeuvresSerieA->map(fn (Oeuvre $o) => $o->getId())->toArray());
+        self::assertNull(self::$em->find(Serie::class, $idSerieA)->getPieceMaitresse());
+
+        $serieB = self::$em->find(Serie::class, $idSerieB);
+        $serieA = self::$em->find(Serie::class, $idSerieA);
+        $serieA->retirerOeuvre($oeuvre);
+        self::$em->flush();
+        self::$em->clear();
+
+        self::assertSame($idSerieB, self::$em->find(Oeuvre::class, $idOeuvre)->getSerie()?->getId());
+
+        $serieB = self::$em->find(Serie::class, $idSerieB);
+        $serieA = self::$em->find(Serie::class, $idSerieA);
+        $serieA->retirerOeuvre($oeuvre);
+        self::$em->flush();
+        self::$em->clear();
+
+        $serieB = self::$em->find(Serie::class, $idSerieB);
+        self::assertSame($idOeuvre, $serieB->getOeuvres()->map(fn (Oeuvre $o) => $o->getId())->toArray()[0]);
     }
 
     public function testSlugUnique(): void

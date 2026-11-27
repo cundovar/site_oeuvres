@@ -2,8 +2,19 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
-    # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    session:
+        cookie_lifetime: 604800
+        cookie_path: /api/admin
+        cookie_httponly: true
+        cookie_samesite: lax
+        cookie_secure: auto
+        gc_maxlifetime: 604800
+
+    rate_limiter:
+        connexion_lien:
+            policy: sliding_window
+            limit: 5
+            interval: 1 hour
 
     #esi: true
     #fragments: true

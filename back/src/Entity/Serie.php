@@ -192,7 +192,8 @@ class Serie
 
     public function setPieceMaitresse(?Oeuvre $oeuvre): static
     {
-        if ($oeuvre !== null && $oeuvre->getSerie() !== $this) {
+        if ($oeuvre !== null && $oeuvre->getSerie() !== $this
+            && $oeuvre->getSerie()?->getId() !== $this->getId()) {
             throw new \InvalidArgumentException('La pièce maîtresse doit appartenir à la série.');
         }
 
@@ -209,17 +210,15 @@ class Serie
 
     public function ajouterOeuvre(Oeuvre $oeuvre): void
     {
-        if (!$this->oeuvres->contains($oeuvre)) {
-            $this->oeuvres->add($oeuvre);
+        if ($oeuvre->getSerie()?->getId() !== $this->getId()) {
+            $oeuvre->setSerie($this);
         }
     }
 
     public function retirerOeuvre(Oeuvre $oeuvre): void
     {
-        $this->oeuvres->removeElement($oeuvre);
-
-        if ($this->pieceMaitresse === $oeuvre) {
-            $this->pieceMaitresse = null;
+        if ($oeuvre->getSerie()?->getId() === $this->getId()) {
+            $oeuvre->setSerie(null);
         }
     }
 

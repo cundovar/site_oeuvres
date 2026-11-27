@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\PersistentCollection;
 
 #[ORM\Entity]
 #[ORM\HasLifecycleCallbacks]
@@ -103,6 +104,25 @@ class Categorie
         if ($oeuvre->getCategories()->contains($this)) {
             $oeuvre->removeCategorie($this);
         }
+    }
+
+    public function recevoirOeuvre(Oeuvre $oeuvre): void
+    {
+        if ($this->collectionModifiable() && !$this->oeuvres->contains($oeuvre)) {
+            $this->oeuvres->add($oeuvre);
+        }
+    }
+
+    public function oublierOeuvre(Oeuvre $oeuvre): void
+    {
+        if ($this->collectionModifiable()) {
+            $this->oeuvres->removeElement($oeuvre);
+        }
+    }
+
+    private function collectionModifiable(): bool
+    {
+        return !($this->oeuvres instanceof PersistentCollection && !$this->oeuvres->isInitialized());
     }
 
     public function getCreatedAt(): \DateTimeImmutable

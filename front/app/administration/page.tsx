@@ -13,25 +13,31 @@ export default function Administration() {
 
   useEffect(() => {
     let annule = false;
-    fetch("/api/admin/session", { cache: "no-store" }).then(async (reponse) => {
-      if (annule) return;
-      if (reponse.status === 401 || reponse.status === 403) {
-        navigateur.replace("/administration/connexion");
-        return;
-      }
-      if (!reponse.ok) {
-        setEtat("refus");
-        return;
-      }
-      const donnees = (await reponse.json()) as { email: string | null };
-      if (annule) return;
-      if (!donnees.email) {
-        navigateur.replace("/administration/connexion");
-        return;
-      }
-      setEmail(donnees.email);
-      setEtat("connecte");
-    });
+    fetch("/api/admin/session", { cache: "no-store" })
+      .then(async (reponse) => {
+        if (annule) return;
+        if (reponse.status === 401 || reponse.status === 403) {
+          navigateur.replace("/administration/connexion");
+          return;
+        }
+        if (!reponse.ok) {
+          setEtat("refus");
+          return;
+        }
+        const donnees = (await reponse.json()) as { email: string | null };
+        if (annule) return;
+        if (!donnees.email) {
+          navigateur.replace("/administration/connexion");
+          return;
+        }
+        setEmail(donnees.email);
+        setEtat("connecte");
+      })
+      .catch(() => {
+        if (!annule) {
+          setEtat("refus");
+        }
+      });
     return () => {
       annule = true;
     };

@@ -67,4 +67,4 @@ Le mot de passe exige au moins 12 caractères. Sans mot de passe, un compte ne p
 
 ## Reste à faire
 
-La purge des sessions, le TOTP éventuel, la récupération par e-mail, la configuration SMTP réelle de production et la topologie définitive restent à préciser avant la mise en production. Voir aussi le [modèle métier](/guide/modele-metier) : les comptes administrateurs sont gérés hors du modèle des œuvres.
+La purge des sessions, le TOTP éventuel, la récupération par e-mail, la configuration SMTP réelle de production et la topologie définitive restent à préciser avant la mise en production. Le lien reçu par e-mail reste une URL : sa visibilité dépend du client de messagerie, de l'historique du navigateur (nettoyé dès l'arrivée sur la page de confirmation) et d'un éventuel proxy inverse, qu'un déploiement devra configurer sans journaliser ces URL. Voir aussi le [modèle métier](/guide/modele-metier) : les comptes administrateurs sont gérés hors du modèle des œuvres.

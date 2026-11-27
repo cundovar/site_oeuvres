@@ -1,53 +1,49 @@
-# Review: authentification de l’administration
+# Review: authentification et modèle métier
 
-- **Verdict**: blocked
-- **Diff**: `7630eef..bd83675`
+- **Verdict**: changes-requested
+- **Diff**: `ee1c856..540ff7c`
 - **Axes run**: code, functional, relevancy
 - **Date**: 2026-11-27
-- **Findings**: 1 critical, 8 warning, 0 minor
+- **Findings**: 0 critical, 5 warning, 0 minor
 
 ## Phases
 
-### Phase 1 — Architecture et décisions de sécurité
+### Phase 1 — Architecture
 
-- [ ] Contrat compatible avec le déploiement : topologie et secret de production non garantis ; décisions de durée de session et absence de journal non attribuées à une validation utilisateur — fix.
+- [ ] Les choix de session et d’historique ne sont pas explicitement confirmés par l’utilisateur ; la topologie de production reste à préciser — fix.
 
 ### Phase 2 — Compte et mot de passe
 
-- [ ] Seuls les comptes autorisés accèdent aux opérations : sécurité présente dans le code mais pas vérifiée de bout en bout ici ; secret public utilisable par défaut — fix.
+- [ ] Secret par défaut retiré et Compose exige une valeur, mais les parcours d’accès et les droits n’ont pu être testés ici — fix.
 
 ### Phase 3 — Lien e-mail
 
-- [ ] Usage unique et expiration : configuration et test de rejeu présents ; expiration réelle non testée, lien exposé aux journaux, défaut SMTP divulguant l’existence du compte — fix.
+- [ ] Usage unique, expiration et panne SMTP couverts par des tests présents mais non exécutés ici ; le lien initial reste dans une URL reçue par le serveur — fix.
 
 ### Phase 4 — Interface et intégration
 
-- [ ] Clavier et session bout en bout : non vérifiés au navigateur dans cette revue ; échec réseau laisse le chargement affiché — fix.
+- [ ] Le parcours navigateur et l’accessibilité clavier ne sont pas vérifiés dans cette revue ; l’échec réseau de session reste non traité — fix.
 
 ### Phase 5 — Vérification et documentation
 
-- [ ] Tests MySQL et parcours réel non exécutés dans cette revue ; test d’expiration ne teste qu’une signature falsifiée — fix.
+- [ ] Tests MySQL, migrations sur données préexistantes et parcours complet impossibles ici — fix.
 
 ## Findings
 
 | Sev | Kind | Phase | Location | Issue | Fix |
 | --- | --- | --- | --- | --- | --- |
-| 🔴 | code | 2 | `back/.env:19` | Secret Symfony connu et versionné ; s’il est repris en production, les signatures des liens et autres mécanismes dépendants ne sont plus fiables. | Imposer un secret propre à chaque déploiement, non versionné ; documenter et vérifier sa présence en production. |
-| 🟡 | functional | 1 | `docs/guide/authentification.md:27` | Session de 7 jours et absence de journal retenues sans trace de validation utilisateur ; architecture de production reste inconnue. | Confirmer les choix et les exigences de déploiement, corriger le statut du plan. |
-| 🟡 | functional | 2 | `back/config/packages/security.yaml:14` | Protection configurée mais parcours réel et droits non vérifiés dans cet environnement. | Tester les opérations protégées en environnement isolé, y compris un compte sans rôle. |
-| 🟡 | functional | 3 | `back/tests/SecuriteAdministrationTest.php:203` | Le test modifie la date signée : il teste une signature falsifiée, pas un lien réellement expiré. | Générer un lien signé dont la date est passée ou contrôler l’horloge, puis tester le refus. |
-| 🟡 | code | 3 | `back/src/Controller/ConnexionController.php:49` | Une erreur d’envoi SMTP survient uniquement pour un compte existant et peut donner une réponse 500 au lieu de la réponse neutre. | Gérer l’échec d’envoi sans divulguer l’existence du compte, journaliser sans secret et tester. |
-| 🟡 | code | 3 | `front/app/administration/connexion/lien/page.tsx:16` | Paramètres sensibles dans les URL GET et POST, susceptibles d’être enregistrés dans les journaux serveur/proxy et l’historique ; aucune mesure de rédaction des logs documentée. | Retirer les secrets des URL dès que possible et configurer la rédaction des journaux et une politique Referrer-Policy adaptée. |
-| 🟡 | functional | 4 | `front/app/administration/page.tsx:16` | Échec réseau de la vérification de session non capturé : l’interface peut rester sur « Chargement ». | Traiter le rejet et afficher une erreur accessible ; vérifier clavier et navigateur. |
-| 🟡 | functional | 5 | `back/tests/SecuriteAdministrationTest.php:24` | Les tests et le parcours front–back n’ont pas pu être exécutés : Docker indisponible et dépendances locales incomplètes. | Exécuter sur MySQL isolé avec Mailpit et navigateur, puis consigner les résultats. |
-| 🟡 | code | 2 | `back/src/Security/AuthentificateurMotDePasse.php:31` | JSON invalide déclenche une exception non traitée au lieu d’une erreur client contrôlée. | Valider le corps et renvoyer une réponse 400 générique ; ajouter un test. |
+| 🟡 | code | - | `back/src/Entity/Serie.php:193` | Deux séries non persistées ont des identifiants nuls comparés comme identiques : une pièce étrangère peut être acceptée et ajouter une œuvre à une nouvelle série ne fait rien. Reproduit sur des objets isolés. | Comparer l’identité objet en premier et les identifiants seulement s’ils sont non nuls ; tester les entités nouvelles. |
+| 🟡 | code | - | `back/src/Entity/Categorie.php:94` | Ajouter une catégorie à une œuvre ne met plus à jour la collection inverse en mémoire ; l’ajout et le retrait depuis une série ne synchronisent pas non plus sa collection. Reproduit sur catégorie. | Synchroniser les deux côtés sans récursion et tester les collections avant et après rechargement. |
+| 🟡 | code | - | `back/migrations/Version20261127150653.php:22` | La migration écrit NULL avant de rendre la colonne nullable ; sur une base existante contenant des œuvres non mises en avant elle échoue. L’opération inverse rend la colonne NOT NULL avant de convertir les valeurs nulles. | Changer l’ordre des opérations et tester montée et descente sur base contenant des données. |
+| 🟡 | functional | 4 | `front/app/administration/page.tsx:16` | Une erreur réseau lors de la vérification de session n’est pas capturée et peut laisser le chargement affiché. | Traiter le rejet et présenter une erreur accessible. |
+| 🟡 | functional | 5 | `back/tests/SecuriteAdministrationTest.php` | Aucun test MySQL ou parcours navigateur ne peut être relancé dans cet environnement ; l’initialisation locale est incomplète. | Vérifier migrations et tests sur base isolée et le parcours complet avec Mailpit et navigateur. |
 
 ## Verification
 
 | Metric | Value |
 | --- | --- |
-| Verified | 0% (0/5 critères pleinement vérifiés dans cette revue) |
-| Files checked | Plan, configuration sécurité et session, entité, contrôleurs, commandes, front, tests et documentation |
-| Unchecked | Phases 1 à 5 — fix : décisions, sécurité, expiration, navigateur et tests de bout en bout |
-| Unplanned | Modifications non commitées des entités du premier plan exclues de la revue. |
-| Runtime | ESLint, compilation VitePress et configuration Compose valides ; Docker inaccessible, PHP vendor local incomplet, tests MySQL et navigateur non exécutés. |
+| Verified | 0% (0/5 critères auth pleinement vérifiés dans cette revue) |
+| Files checked | Entités, service, migrations, contrôleurs, sécurité, interface, tests, documentation et corrections ultérieures |
+| Unchecked | Phases 1 à 5 — fix : décisions, droits, parcours complet et tests |
+| Unplanned | Corrections du modèle métier incluses dans cette revue élargie. |
+| Runtime | Cas d’objets isolés reproduits ; syntaxe PHP, lint front et config Compose valides ; Docker refusé, PHPUnit et navigateur non exécutés. |

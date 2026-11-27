@@ -348,6 +348,49 @@ final class PersistanceOeuvresTest extends KernelTestCase
         self::assertSame($idOeuvre, $serieB->getOeuvres()->map(fn (Oeuvre $o) => $o->getId())->toArray()[0]);
     }
 
+    public function testUneNouvelleSerieRefuseLaPieceMaitresseDUneAutreNouvelleSerie(): void
+    {
+        $serieA = new Serie('serie-nouvelle-a', 'Série nouvelle A');
+        $serieB = new Serie('serie-nouvelle-b', 'Série nouvelle B');
+        $oeuvre = new Oeuvre('oeuvre-nouvelle-b', 'Œuvre nouvelle B');
+        $oeuvre->setSerie($serieB);
+
+        try {
+            $serieA->setPieceMaitresse($oeuvre);
+            self::fail('La pièce maîtresse d’une autre série nouvelle aurait dû être refusée.');
+        } catch (\InvalidArgumentException) {
+            self::assertNull($serieA->getPieceMaitresse());
+        }
+
+        $serieA->ajouterOeuvre($oeuvre);
+        self::assertSame($serieA, $oeuvre->getSerie());
+        self::assertContains($oeuvre, $serieA->getOeuvres());
+        self::assertNotContains($oeuvre, $serieB->getOeuvres());
+
+        $serieA->setPieceMaitresse($oeuvre);
+        self::assertSame($oeuvre, $serieA->getPieceMaitresse());
+    }
+
+    public function testCollectionsCategoriesSynchroniseesEnMemoire(): void
+    {
+        $categorie = new Categorie('Mémoire');
+        $oeuvre = new Oeuvre('oeuvre-memoire', 'Œuvre mémoire');
+
+        $oeuvre->addCategorie($categorie);
+        self::assertContains($oeuvre, $categorie->getOeuvres());
+
+        $oeuvre->removeCategorie($categorie);
+        self::assertNotContains($oeuvre, $categorie->getOeuvres());
+
+        $categorie->ajouterOeuvre($oeuvre);
+        self::assertContains($categorie, $oeuvre->getCategories());
+        self::assertContains($oeuvre, $categorie->getOeuvres());
+
+        $categorie->retirerOeuvre($oeuvre);
+        self::assertNotContains($categorie, $oeuvre->getCategories());
+        self::assertNotContains($oeuvre, $categorie->getOeuvres());
+    }
+
     public function testSlugUnique(): void
     {
         $oeuvre = new Oeuvre('slug-deja-emploi', 'Œuvre première');

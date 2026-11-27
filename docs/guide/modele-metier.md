@@ -15,7 +15,7 @@ Ce modèle est issu des écrans « Admin — Parcours » de Penpot et des décis
 | categories | Plusieurs catégories, via une table de liaison ; suppression d'une catégorie sans suppression des œuvres |
 | media | Référence facultative vers un média image ; texte alternatif requis à la publication à préciser selon le contexte |
 | statut | Brouillon ou publié ; disponibilité des tirages distincte de la publication |
-| visible_index, mise_en_avant | Booléens distincts du statut de publication ; une seule œuvre mise en avant sur le site, unicité contrôlée par le service `GestionOeuvre` (une contrainte en base n'est pas exprimable pour ce cas) |
+| visible_index, mise_en_avant | Booléens distincts du statut de publication ; une seule œuvre mise en avant sur le site : l'unicité est garantie par une contrainte d'unicité en base (colonne à trois états), le service `GestionOeuvre` désignant l'œuvre en avant |
 | ordre_index, ordre_serie | Entiers distincts pour les deux ordres d'affichage |
 | procede, iterations, tirage, format, edition | Données techniques facultatives ; les textes destinés au public prévoient français et anglais |
 | prix_sur_demande | Booléen ; distingue un prix communiqué sur demande d'un montant chiffré |

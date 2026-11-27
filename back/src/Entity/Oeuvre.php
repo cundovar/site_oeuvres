@@ -58,8 +58,8 @@ class Oeuvre
     #[ORM\Column]
     private bool $visibleIndex = false;
 
-    #[ORM\Column]
-    private bool $miseEnAvant = false;
+    #[ORM\Column(nullable: true, unique: true)]
+    private ?bool $miseEnAvant = null;
 
     #[ORM\Column]
     private int $ordreIndex = 0;
@@ -216,9 +216,12 @@ class Oeuvre
             return $this;
         }
 
-        $this->serie?->retirerOeuvre($this);
+        if ($this->serie !== null && $serie !== null && $this->serie->getId() !== null
+            && $this->serie->getId() === $serie->getId()) {
+            return $this;
+        }
+
         $this->serie = $serie;
-        $serie?->ajouterOeuvre($this);
 
         return $this;
     }
@@ -286,12 +289,12 @@ class Oeuvre
 
     public function isMiseEnAvant(): bool
     {
-        return $this->miseEnAvant;
+        return $this->miseEnAvant === true;
     }
 
     public function setMiseEnAvant(bool $miseEnAvant): static
     {
-        $this->miseEnAvant = $miseEnAvant;
+        $this->miseEnAvant = $miseEnAvant ? true : null;
 
         return $this;
     }

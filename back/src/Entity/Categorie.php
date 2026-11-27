@@ -93,14 +93,16 @@ class Categorie
 
     public function ajouterOeuvre(Oeuvre $oeuvre): void
     {
-        if (!$this->oeuvres->contains($oeuvre)) {
-            $this->oeuvres->add($oeuvre);
+        if (!$oeuvre->getCategories()->contains($this)) {
+            $oeuvre->addCategorie($this);
         }
     }
 
     public function retirerOeuvre(Oeuvre $oeuvre): void
     {
-        $this->oeuvres->removeElement($oeuvre);
+        if ($oeuvre->getCategories()->contains($this)) {
+            $oeuvre->removeCategorie($this);
+        }
     }
 
     public function getCreatedAt(): \DateTimeImmutable
